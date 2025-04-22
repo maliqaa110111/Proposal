@@ -261,7 +261,7 @@ with tabs[4]:
 
             # Tombol hapus file
             col3.button(
-                label="Delete", 
+                label="CLEAR", 
                 key=row.id, 
                 on_click=delete_file, 
                 args=(row.id,)

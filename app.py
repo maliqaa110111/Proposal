@@ -9,8 +9,8 @@ import os
 st.set_page_config(page_title="CISTECH", page_icon="assets/favicon.ico")
 
 # Konfigurasi Supabase (ganti dengan milik Anda)
-SUPABASE_URL = "https://cypkiwwiogswhwrmvntt.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5cGtpd3dpb2dzd2h3cm12bnR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTIwNzQsImV4cCI6MjA2MDk2ODA3NH0._EzG_7Ny7OFa_tnyh0ovYOduffnqWHXq_GKlHxEIlZI"
+SUPABASE_URL = "https://qliuwywmmknonkyytatr.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsaXV3eXdtbWtub25reXl0YXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTYxMzIsImV4cCI6MjA2MDk3MjEzMn0.g6rdmhODiWZqxEMxB8TO2gDIlZDfykxqem-YKY4Hp1s"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # --- Database Functions ---

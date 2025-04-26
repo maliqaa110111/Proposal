@@ -17,71 +17,56 @@ def get_all_projects():
         response = supabase.table('projects').select('*').execute()
         if response.data:
             df = pd.DataFrame(response.data)
-            return df
+            return df  # Pastikan tipe data kolom sudah sesuai! 
         else:
-            st.info("No Projects found in the database.")
-            return pd.DataFrame()
+            st.info("Tidak ada proyek yang ditemukan.")
+            return pd.DataFrame() # Return DataFrame kosong jika tidak ada data
     except Exception as e:
         st.error(f"Error fetching projects: {e}")
         return pd.DataFrame()
 
-def add_project(project_name, category, pic, status, date_start, date_end, no_po):
+
+def add_project(project_data):
     try:
-        data = {
-            "project_name": project_name,
-            "category": category,
-            "pic": pic,
-            "status": status,
-            "date_start": date_start.strftime('%Y-%m-%d'),
-            "date_end": date_end.strftime('%Y-%m-%d'),
-            "no_po": no_po
-        }
-        response = supabase.table('projects').insert(data).execute()
-        
-        if response.status_code == 201 or (hasattr(response,'status_code') and response.status_code == 201):
-           st.success("Project added successfully!")
-           return True
+        response = supabase.table('projects').insert(project_data).execute()
+        if response.status_code == 201:
+            st.success("Proyek berhasil ditambahkan!")
         else:
-           st.error(f"Failed to add project: {response.data}")
-           return False
+            st.error(f"Error adding project: {response.error}")
 
     except Exception as e:
-       st.error(f"Error adding project: {e}")
-       return False
+        st.error(f"Error adding project: {e}")
 
-def update_project(id, project_name, category, pic, status, date_start, date_end, no_po):
+
+def update_project(project_id, updated_data):
     try:
-        data = {
-            "project_name": project_name,
-            "category": category,
-            "pic": pic,
-            "status": status,
-            "date_start": date_start.strftime('%Y-%m-%d'),  # Pastikan format tanggal sesuai dengan kolom di Supabase!
-            "date_end": date_end.strftime('%Y-%m-%d'),    # Pastikan format tanggal sesuai dengan kolom di Supabase!
-            "no_po": no_po
-
-        }
-
-        response = supabase.table('projects').update(data).eq('id', id).execute() # Update berdasarkan ID proyek!
-
-        if response.status == 'OK': # Periksa status response untuk memastikan keberhasilan update data!
-            st.success("Project updated successfully!")
+        response = supabase.table('projects').update(updated_data).eq('id', project_id).execute()
+        if response.status_code == 200:
+            st.success("Proyek berhasil diperbarui!")
         else:
-            st.error(f"Error updating project: {response.data}") # Tampilkan error response dari Supabase
+            st.error(f"Error updating project: {response.error}")
 
     except Exception as e:
-        st.error(f"Error updating project: {e}")
+        st.error(f"Error updating project : {e}")
 
-def delete_project(id):
-    try:
-        response = supabase.table('projects').delete().eq('id', id).execute()
-        if response.status == 'OK': # Periksa status response untuk memastikan keberhasilan delete data!
-            st.success("Project deleted successfully!")
-        else:
-            st.error(f"Error deleting project: {response.data}") # Tampilkan error response dari Supabase
 
+def delete_project(project_id):  # Tambahkan fungsi untuk menghapus proyek di Supabase!
+
+    try: 
+      response = supabase.table('projects').delete().eq('id', project_id).execute()
+      if response.status_code == 200:
+        st.success("Proyek berhasil dihapus!")
+      else:
+        st.error(f"Error deleting project: {response.error}")
     except Exception as e:
-        st.error(f"Error deleting project: {e}")
+      st.error(f"Error deleting project: {e}")
+
+
+# --- Streamlit App ---
+
+# ... (rest of your Streamlit app code using the above functions) ...
+
+
 
 def get_all_project_files(project_id):
     try:

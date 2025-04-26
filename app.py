@@ -22,20 +22,20 @@ def get_all_projects():
 def add_project(project_data):
     try:
         response = supabase.table('projects').insert(project_data).execute()
-        if response.status_code == 201:
+        if response.error is None:
             st.success("Project successfully added!")
         else:
-            st.error(f"Error adding project: {response.error}")
+            st.error(f"Error adding project: {response.error.message}")
     except Exception as e:
         st.error(f"Error adding project: {e}")
 
 def update_project(project_id, updated_data):
     try:
         response = supabase.table('projects').update(updated_data).eq('id', project_id).execute()
-        if response.status_code == 200:
+        if response.error is None:
             st.success("Project successfully updated!")
         else:
-            st.error(f"Error updating project: {response.error}")
+            st.error(f"Error updating project: {response.error.message}")
     except Exception as e:
         st.error(f"Error updating project: {e}")
 

@@ -165,32 +165,67 @@ with tabs[1]:
 with tabs[2]:
     st.subheader("Edit Project")
     df = get_all_projects()
-    if not df.empty:
+    
+    if df.empty:
+        st.info("No projects found in the database.")
+    else:
         options = df[['id', 'project_name']]
+        
         selected_option = st.selectbox(
             "Choose a Project to Edit",
             options['id'].tolist(),
             format_func=lambda x: options[options['id'] == x]['project_name'].iloc[0]
         )
+        
         selected_row = df[df['id'] == selected_option].iloc[0]
+        
         with st.form("edit_form"):
-            edit_project_name = st.text_input("Project Name", selected_row["project_name"])
-            edit_category = st.selectbox("Category", ["Project", "Service"], index=["Project", "Service"].index(selected_row['category']))
-            edit_pic = st.text_input("PIC", selected_row["pic"])
-            edit_status = st.selectbox("Status", ["Not Started", "Waiting BA", "Not Report", "In Progress", "On Hold", "Completed"], index=["Not Started", "Waiting BA", "Not Report", "In Progress", "On Hold", "Completed"].index(selected_row["status"]))
-            edit_no_po = st.text_input("PO Number", selected_row["no_po"])  # Added PO Number input
-            st.write("Select Start and End Dates")
-            start_dt = datetime.datetime.strptime(selected_row['date_start'], '%Y-%m-%d').date()
-            end_dt = datetime.datetime.strptime(selected_row['date_end'], '%Y-%m-%d').date()
+            edit_project_name = st.text_input("Project Name", value=selected_row['project_name'])
+            edit_category = st.text_input("Category", value=selected_row['category'])
+            edit_pic = st.text_input("PIC", value=selected_row['pic'])
+            
+            # Status dropdown, sesuaikan opsi status sesuai kebutuhan
+            status_options = ['In Progress', 'Completed', 'On Hold']
+            edit_status = st.selectbox(
+                "Status",
+                status_options,
+                index=status_options.index(selected_row['status']) if selected_row['status'] in status_options else 0
+            )
+            
+            # Parsing tanggal dari string ke datetime.date
+            import datetime
+            
+            start_dt_default = datetime.datetime.strptime(selected_row['date_start'], '%Y-%m-%d').date()
+            end_dt_default   = datetime.datetime.strptime(selected_row['date_end'], '%Y-%m-%d').date()
+            
             start_dt, end_dt = st.date_input(
-                "Select start and end dates",
-                value=(start_dt, end_dt),
+                "Select Start and End Dates",
+                value=(start_dt_default, end_dt_default),
                 min_value=datetime.date.today() - datetime.timedelta(days=365),
                 max_value=datetime.date.today() + datetime.timedelta(days=365)
-            )
-            update_btn = st.form_submit_button(label="Update Project")
-            if update_btn:
-                update_project(selected_option, edit_project_name, edit_category, edit_pic, edit_status, start_dt, end_dt, edit_no_po)
+             )
+             
+             # PO Number (jika ada)
+             edit_no_po = st.text_input("PO Number", value=selected_row.get('po_number', ''))
+             
+             update_btn = st.form_submit_button(label="Update Project")
+             
+             if update_btn:
+                 try:
+                     update_project(
+                         project_id=selected_option,
+                         project_name=edit_project_name,
+                         category=edit_category,
+                         pic=edit_pic,
+                         status=edit_status,
+                         date_start=start_dt.isoformat(),
+                         date_end=end_dt.isoformat(),
+                         po_number=edit_no_po
+                     )
+                     st.success(f"Project '{edit_project_name}' updated successfully!")
+                 except Exception as e:
+                     st.error(f"Failed to update project: {e}")
+
 
 with tabs[3]:
     st.subheader("Delete Project")

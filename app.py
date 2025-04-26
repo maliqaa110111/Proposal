@@ -8,7 +8,7 @@ from supabase import create_client
 
 # Konfigurasi Supabase
 url = st.secrets["https://qliuwywmmknonkyytatr.supabase.co"]
-key = st.secrets[" eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsaXV3eXdtbWtub25reXl0YXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTYxMzIsImV4cCI6MjA2MDk3MjEzMn0.g6rdmhODiWZqxEMxB8TO2gDIlZDfykxqem-YKY4Hp1s"]
+key = st.secrets["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsaXV3eXdtbWtub25reXl0YXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTYxMzIsImV4cCI6MjA2MDk3MjEzMn0.g6rdmhODiWZqxEMxB8TO2gDIlZDfykxqem-YKY4Hp1s"]
 supabase = create_client(url, key)
 
 # --- Database Functions ---

@@ -111,17 +111,17 @@ with tabs[0]:
     df = get_all_projects()
     if not df.empty:
         display_df = df.rename(columns={
-            'project_name': 'Project',
-            'category': 'Category',
+            'project_name': 'Proyek',
+            'category': 'Kategori',
             'pic': 'PIC',
             'status': 'Status',
-            'date_start': 'Start Date',
-            'date_end': 'End Date',
-            'no_po': 'PO Number'
+            'date_start': 'Tanggal Mulai',
+            'date_end': 'Tanggal Selesai',
+            'no_po': 'Nomor PO'
         }).set_index('id')
         st.dataframe(display_df, use_container_width=True)
     else:
-        st.info("No Projects found in the database.")
+        st.info("Tidak ada proyek yang ditemukan dalam database.")
 
 with tabs[1]:
     st.subheader("Add New Project")

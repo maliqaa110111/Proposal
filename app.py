@@ -14,22 +14,23 @@ supabase = create_client(url, key)
 def get_all_projects():
     try:
         response = supabase.table('projects').select('*').execute()
-        print(response.json())
+        print(response.json()) # Untuk debugging, lihat isi response
+
         if response.error:
             st.error(f"Kesalahan mengambil data proyek: {response.error.message}")
-            return pd.DataFrame()
-        if response.data:
-            df = pd.DataFrame(response.data)
-            # Konversi tipe data eksplisit untuk kolom tanggal.
-            df['date_start'] = pd.to_datetime(df['date_start'])
-            df['date_end'] = pd.to_datetime(df['date_end'])
-            st.write("Data Mentah dari Supabase:", df) # Baris debugging - hapus nanti
-            return df
-        else:
-            return pd.DataFrame()
+            return pd.DataFrame() # Mengembalikan DataFrame kosong jika ada error
+
+        if response.data is None or len(response.data) == 0: #cek jika datanya kosong
+            st.info("Tidak ada proyek yang ditemukan.")
+            return pd.DataFrame() # Mengembalikan DataFrame kosong jika tidak ada data
+
+        df = pd.DataFrame(response.data)
+        return df
     except Exception as e:
-        st.error(f"Terjadi kesalahan yang tidak terduga: {e}")
-        return pd.DataFrame()
+        st.error(f"Kesalahan tak terduga: {e}")
+        return pd.DataFrame() # Mengembalikan DataFrame kosong jika ada exception
+
+
 
 def add_project(project_data):
     try:

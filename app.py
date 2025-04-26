@@ -14,6 +14,9 @@ supabase = create_client(url, key)
 def get_all_projects():
     try:
         response = supabase.table('projects').select('*').execute()
+        if response.error:
+            st.error(f"Error fetching projects: {response.error.message}")
+            return pd.DataFrame()  # Return empty DataFrame on error
         return pd.DataFrame(response.data) if response.data else pd.DataFrame()
     except Exception as e:
         st.error(f"Error fetching projects: {e}")
@@ -22,37 +25,38 @@ def get_all_projects():
 def add_project(project_data):
     try:
         response = supabase.table('projects').insert(project_data).execute()
-        if response.error is None:
-            st.success("Project successfully added!")
-        else:
+        if response.error:
             st.error(f"Error adding project: {response.error.message}")
+        else:
+            st.success("Project successfully added!")
     except Exception as e:
         st.error(f"Error adding project: {e}")
 
 def update_project(project_id, updated_data):
     try:
         response = supabase.table('projects').update(updated_data).eq('id', project_id).execute()
-        if response.error is None:
-            st.success("Project successfully updated!")
-        else:
+        if response.error:
             st.error(f"Error updating project: {response.error.message}")
+        else:
+            st.success("Project successfully updated!")
     except Exception as e:
         st.error(f"Error updating project: {e}")
 
 def delete_project(project_id):
     try:
         response = supabase.table('projects').delete().eq('id', project_id).execute()
-        if response.status_code == 200:
+        if response.error:
+            st.error(f"Error deleting project: {response.error.message}")
+        elif response.status_code == 200:
             st.success("Project successfully deleted!")
         else:
-            st.error(f"Error deleting project: {response.error}")
+            st.error(f"Unexpected error deleting project. Status code: {response.status_code}")
     except Exception as e:
         st.error(f"Error deleting project: {e}")
 
 def get_all_project_files(project_id):
     try:
-        # Assuming get_connection is defined elsewhere and handles database connection
-        with get_connection() as conn:
+        with get_connection() as conn: #get_connection still needs to be defined
             df = pd.read_sql(f"SELECT * FROM project_files WHERE project_id = {project_id}", conn)
         return df
     except Exception as e:
@@ -62,32 +66,36 @@ def get_all_project_files(project_id):
 def upload_file(project_id, uploaded_file):
     if uploaded_file is not None:
         file_path = f"project_{project_id}/{uploaded_file.name}"
-        response = supabase.storage.from_("project.files").upload(file_path, uploaded_file.getbuffer())
-        if response.status_code == 200:
-            with get_connection() as conn:
+        response = supabase.storage.from_("project.files").upload(file_path, uploaded_file.getbuffer()).execute()
+        if response.error:
+            st.error(f"Error uploading file to Supabase: {response.error.message}")
+        elif response.status_code == 200:
+            with get_connection() as conn: #get_connection still needs to be defined
                 cursor = conn.cursor()
                 cursor.execute("INSERT INTO project_files (project_id, file_name, file_path) VALUES (?, ?, ?)",
                                (project_id, uploaded_file.name, file_path))
                 conn.commit()
             st.success("File uploaded successfully!")
         else:
-            st.error(f"Error uploading file to Supabase: {response.json()}")
+            st.error(f"Unexpected error uploading file. Status code: {response.status_code}")
 
 def delete_file(file_id):
     try:
-        with get_connection() as conn:
+        with get_connection() as conn: #get_connection still needs to be defined
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM project_files WHERE id=?", (file_id,))
             row = cursor.fetchone()
             if row:
                 file_path = row[3]
-                response = supabase.storage.from_("project.files").remove([file_path])
-                if response.status_code == 204:
+                response = supabase.storage.from_("project.files").remove([file_path]).execute()
+                if response.error:
+                    st.error(f"Error deleting file from Supabase: {response.error.message}")
+                elif response.status_code == 204:
                     cursor.execute("DELETE FROM project_files WHERE id=?", (file_id,))
                     conn.commit()
                     st.success("File deleted successfully!")
                 else:
-                    st.error(f"Error deleting file from Supabase: {response.json()}")
+                    st.error(f"Unexpected error deleting file. Status code: {response.status_code}")
             else:
                 st.error("File does not exist.")
     except Exception as e:

@@ -92,7 +92,7 @@ with tabs[0]:
         })
         
         # Tambahkan kolom nomor urut (1, 2, 3, ...)
-        display_df.insert(0, 'No', range(1, len(display_df) + 1)  # Kolom pertama
+        display_df.insert(0, 'No', range(1, len(display_df) + 1))  # Kolom pertama
         
         # Hapus kolom ID asli dari tampilan
         display_df = display_df.drop(columns=['id'])

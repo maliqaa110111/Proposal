@@ -80,6 +80,7 @@ tabs = st.tabs(["View Projects", "Add Project", "Edit Project", "Delete Project"
 with tabs[0]:
     df = get_all_projects()
     if not df.empty:
+        # Buat DataFrame untuk ditampilkan
         display_df = df.rename(columns={
             'project_name': 'Proyek',
             'category': 'Kategori',
@@ -88,7 +89,14 @@ with tabs[0]:
             'date_start': 'Tanggal Mulai',
             'date_end': 'Tanggal Selesai',
             'no_po': 'Nomor PO'
-        }).set_index('id')
+        })
+        
+        # Tambahkan kolom nomor urut (1, 2, 3, ...)
+        display_df.insert(0, 'No', range(1, len(display_df) + 1)  # Kolom pertama
+        
+        # Hapus kolom ID asli dari tampilan
+        display_df = display_df.drop(columns=['id'])
+        
         st.dataframe(display_df, use_container_width=True)
     else:
         st.info("Tidak ada proyek yang ditemukan dalam database.")

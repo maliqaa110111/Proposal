@@ -12,78 +12,71 @@ key = st.secrets["SUPABASE_ANON_KEY"]
 
 supabase = create_client(url, key)
 
-# --- Database Functions ---
-def init_db():
-    with sqlite3.connect('project_mapping.db') as conn:
-        c = conn.cursor()
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS projects (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                project_name TEXT NOT NULL,
-                category TEXT NOT NULL,
-                pic TEXT NOT NULL,
-                status TEXT NOT NULL,
-                date_start TEXT NOT NULL,
-                date_end TEXT NOT NULL,
-                no_po TEXT
-            )
-        ''')
-
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS project_files (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                project_id INTEGER NOT NULL,
-                file_name TEXT NOT NULL,
-                file_path TEXT NOT NULL,
-                upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (project_id) REFERENCES projects(id)
-            )
-        ''')
-        conn.commit()
-
-@st.cache_resource
-def get_connection():
-    return sqlite3.connect('project_mapping.db', check_same_thread=False)
 
 def get_all_projects():
     try:
-        with get_connection() as conn:
-            df = pd.read_sql("SELECT * FROM projects", conn)
-        return df
+        response = supabase.table('projects').select('*').execute()
+        if response.data:
+            df = pd.DataFrame(response.data)
+            return df
+        else:
+            st.info("No projects found in the database.")  # Lebih baik daripada error
+            return pd.DataFrame()
     except Exception as e:
         st.error(f"Error fetching projects: {e}")
         return pd.DataFrame()
 
 def add_project(project_name, category, pic, status, date_start, date_end, no_po):
     try:
-        with get_connection() as conn:
-            c = conn.cursor()
-            c.execute("INSERT INTO projects (project_name, category, pic, status, date_start, date_end, no_po) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                      (project_name, category, pic, status, date_start.strftime('%Y-%m-%d'), date_end.strftime('%Y-%m-%d'), no_po))
-            conn.commit()
+        data = {
+            "project_name": project_name,
+            "category": category,
+            "pic": pic,
+            "status": status,
+            "date_start": date_start.strftime('%Y-%m-%d'),  # Pastikan format tanggal sesuai dengan kolom di Supabase!
+            "date_end": date_end.strftime('%Y-%m-%d'),    # Pastikan format tanggal sesuai dengan kolom di Supabase!
+            "no_po": no_po
+        }
+        response = supabase.table('projects').insert(data).execute()
+        if response.status_code == 201:  # Periksa status code untuk memastikan keberhasilan insert data!
             st.success("Project added successfully!")
-    except sqlite3.Error as e:
+        else:
+            st.error(f"Error adding project: {response.data}") # Tampilkan error response dari Supabase
+    except Exception as e:
         st.error(f"Error adding project: {e}")
 
 def update_project(id, project_name, category, pic, status, date_start, date_end, no_po):
     try:
-        with get_connection() as conn:
-            c = conn.cursor()
-            c.execute("UPDATE projects SET project_name=?, category=?, pic=?, status=?, date_start=?, date_end=?, no_po=? WHERE id=?",
-                      (project_name, category, pic, status, date_start.strftime('%Y-%m-%d'), date_end.strftime('%Y-%m-%d'), no_po, id))
-            conn.commit()
+        data = {
+            "project_name": project_name,
+            "category": category,
+            "pic": pic,
+            "status": status,
+            "date_start": date_start.strftime('%Y-%m-%d'),  # Pastikan format tanggal sesuai dengan kolom di Supabase!
+            "date_end": date_end.strftime('%Y-%m-%d'),    # Pastikan format tanggal sesuai dengan kolom di Supabase!
+            "no_po": no_po
+
+        }
+
+        response = supabase.table('projects').update(data).eq('id', id).execute() # Update berdasarkan ID proyek!
+
+        if response.status == 'OK': # Periksa status response untuk memastikan keberhasilan update data!
             st.success("Project updated successfully!")
-    except sqlite3.Error as e:
+        else:
+            st.error(f"Error updating project: {response.data}") # Tampilkan error response dari Supabase
+
+    except Exception as e:
         st.error(f"Error updating project: {e}")
 
 def delete_project(id):
     try:
-        with get_connection() as conn:
-            c = conn.cursor()
-            c.execute("DELETE FROM projects WHERE id=?", (id,))
-            conn.commit()
+        response = supabase.table('projects').delete().eq('id', id).execute()
+        if response.status == 'OK': # Periksa status response untuk memastikan keberhasilan delete data!
             st.success("Project deleted successfully!")
-    except sqlite3.Error as e:
+        else:
+            st.error(f"Error deleting project: {response.data}") # Tampilkan error response dari Supabase
+
+    except Exception as e:
         st.error(f"Error deleting project: {e}")
 
 def get_all_project_files(project_id):

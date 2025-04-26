@@ -15,11 +15,19 @@ def get_all_projects():
     try:
         response = supabase.table('projects').select('*').execute()
         if response.error:
-            st.error(f"Error fetching projects: {response.error.message}")
-            return pd.DataFrame()  # Return empty DataFrame on error
-        return pd.DataFrame(response.data) if response.data else pd.DataFrame()
+            st.error(f"Kesalahan mengambil data proyek: {response.error.message}")
+            return pd.DataFrame()
+        if response.data:
+            df = pd.DataFrame(response.data)
+            # Konversi tipe data eksplisit untuk kolom tanggal.
+            df['date_start'] = pd.to_datetime(df['date_start'])
+            df['date_end'] = pd.to_datetime(df['date_end'])
+            st.write("Data Mentah dari Supabase:", df) # Baris debugging - hapus nanti
+            return df
+        else:
+            return pd.DataFrame()
     except Exception as e:
-        st.error(f"Error fetching projects: {e}")
+        st.error(f"Terjadi kesalahan yang tidak terduga: {e}")
         return pd.DataFrame()
 
 def add_project(project_data):

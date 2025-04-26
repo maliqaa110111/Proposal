@@ -174,25 +174,33 @@ with tabs[4]:
         selected_project = st.selectbox(
             "Pilih Project",
             df_projects['id'].tolist(),
-            format_func=lambda x: df_projects[df_projects['id'] == x]['project_name'].iloc[0]
+            format_func=lambda x: df_projects[df_projects['id'] == x]['project_name'].iloc[0],
+            key="file_project_select"  # Key unik
         )
-        uploaded_file = st.file_uploader("Upload File", type=['pdf', 'docx', 'png', 'jpg', 'jpeg'])
-        if uploaded_file:
-            if st.button("Upload"):
-                upload_file(selected_project, uploaded_file)
+        
+        # ... (bagian upload file)
+        
         files_df = get_all_project_files(selected_project)
         if not files_df.empty:
             st.write("Daftar File:")
-            for _, row in files_df.iterrows():
+            for index, row in files_df.iterrows():  # Tambahkan index
                 col1, col2, col3 = st.columns([4, 2, 1])
                 col1.write(row['file_name'])
-                url = supabase.storage.from_("project.files").get_public_url(row['file_path'])
+                
+                # Download Button dengan key unik
+                url = supabase.storage.from_("project.files").get_public_url(f"project_{selected_project}/{row['file_name']}")
                 col2.download_button(
                     "Download",
                     data=url,
                     file_name=row['file_name'],
-                    key=f"download_{row['file_name']}"
+                    key=f"download_{selected_project}_{row['file_name']}_{index}"  # Key unik
                 )
-                if col3.button("🗑️", key=f"delete_{row['file_name']}"):
-                    delete_file(selected_project, row['file_path'])
-
+                
+                # Delete Button dengan key unik
+                if col3.button(
+                    "🗑️", 
+                    key=f"delete_{selected_project}_{row['file_name']}_{index}",
+                    on_click=delete_file,
+                    args=(selected_project, f"project_{selected_project}/{row['file_name']}")
+                ):
+                    st.experimental_rerun()  # Refresh halaman setelah hapus

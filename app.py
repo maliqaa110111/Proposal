@@ -14,6 +14,7 @@ supabase = create_client(url, key)
 def get_all_projects():
     try:
         response = supabase.table('projects').select('*').execute()
+        print(response.json())
         if response.error:
             st.error(f"Kesalahan mengambil data proyek: {response.error.message}")
             return pd.DataFrame()

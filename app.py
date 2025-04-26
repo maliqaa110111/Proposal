@@ -1,131 +1,132 @@
 import streamlit as st
 from PIL import Image
 import pandas as pd
-import sqlite3
 import datetime
 import os
+from supabase import create_client
+import requests
 
+# Konfigurasi Supabase
+url ="https://fyzpsnrwchqeivygyydf.supabase.co"
+key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsaXV3eXdtbWtub25reXl0YXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTYxMzIsImV4cCI6MjA2MDk3MjEzMn0.g6rdmhODiWZqxEMxB8TO2gDIlZDfykxqem-YKY4Hp1s"
+supabase = create_client(url, key)
 
 st.set_page_config(page_title="CISTECH", page_icon="assets/favicon.ico")
 
-
-
 # --- Database Functions ---
-def init_db():
-    with sqlite3.connect('project_mapping.db') as conn:
-        c = conn.cursor()
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS projects (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                project_name TEXT NOT NULL,
-                category TEXT NOT NULL,
-                pic TEXT NOT NULL,
-                status TEXT NOT NULL,
-                date_start TEXT NOT NULL,
-                date_end TEXT NOT NULL,
-                no_po TEXT
-            )
-        ''')
-
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS project_files (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                project_id INTEGER NOT NULL,
-                file_name TEXT NOT NULL,
-                file_path TEXT NOT NULL,
-                upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (project_id) REFERENCES projects(id)
-            )
-        ''')
-        conn.commit()
-
-@st.cache_resource
-def get_connection():
-    return sqlite3.connect('project_mapping.db', check_same_thread=False)
-
 def get_all_projects():
     try:
-        with get_connection() as conn:
-            df = pd.read_sql("SELECT * FROM projects", conn)
-        return df
+        response = supabase.table("projects").select("*").execute()
+        if response.data:
+            df = pd.DataFrame(response.data)
+            return df
+        else:
+            return pd.DataFrame()
     except Exception as e:
         st.error(f"Error fetching projects: {e}")
         return pd.DataFrame()
 
 def add_project(project_name, category, pic, status, date_start, date_end, no_po):
     try:
-        with get_connection() as conn:
-            c = conn.cursor()
-            c.execute("INSERT INTO projects (project_name, category, pic, status, date_start, date_end, no_po) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                      (project_name, category, pic, status, date_start.strftime('%Y-%m-%d'), date_end.strftime('%Y-%m-%d'), no_po))
-            conn.commit()
+        response = supabase.table("projects").insert([
+            {
+                "project_name": project_name,
+                "category": category,
+                "pic": pic,
+                "status": status,
+                "date_start": date_start.strftime('%Y-%m-%d'),
+                "date_end": date_end.strftime('%Y-%m-%d'),
+                "no_po": no_po
+            }
+        ]).execute()
+        if response.status_code == 201:
             st.success("Project added successfully!")
-    except sqlite3.Error as e:
+        else:
+            st.error(f"Error adding project: {response.data}")
+    except Exception as e:
         st.error(f"Error adding project: {e}")
 
 def update_project(id, project_name, category, pic, status, date_start, date_end, no_po):
     try:
-        with get_connection() as conn:
-            c = conn.cursor()
-            c.execute("UPDATE projects SET project_name=?, category=?, pic=?, status=?, date_start=?, date_end=?, no_po=? WHERE id=?",
-                      (project_name, category, pic, status, date_start.strftime('%Y-%m-%d'), date_end.strftime('%Y-%m-%d'), no_po, id))
-            conn.commit()
+        response = supabase.table("projects").update({
+            "project_name": project_name,
+            "category": category,
+            "pic": pic,
+            "status": status,
+            "date_start": date_start.strftime('%Y-%m-%d'),
+            "date_end": date_end.strftime('%Y-%m-%d'),
+            "no_po": no_po
+        }).eq("id", id).execute()
+        if response.status_code == 200:
             st.success("Project updated successfully!")
-    except sqlite3.Error as e:
+        else:
+            st.error(f"Error updating project: {response.data}")
+    except Exception as e:
         st.error(f"Error updating project: {e}")
 
 def delete_project(id):
     try:
-        with get_connection() as conn:
-            c = conn.cursor()
-            c.execute("DELETE FROM projects WHERE id=?", (id,))
-            conn.commit()
+        response = supabase.table("projects").delete().eq("id", id).execute()
+        if response.status_code == 200:
             st.success("Project deleted successfully!")
-    except sqlite3.Error as e:
+        else:
+            st.error(f"Error deleting project: {response.data}")
+    except Exception as e:
         st.error(f"Error deleting project: {e}")
 
 def get_all_project_files(project_id):
     try:
-        with get_connection() as conn:
-            df = pd.read_sql(f"SELECT * FROM project_files WHERE project_id = {project_id}", conn)
-        return df
+        response = supabase.table("project_files").select("*").eq("project_id", project_id).execute()
+        if response.data:
+            df = pd.DataFrame(response.data)
+            return df
+        else:
+            return pd.DataFrame()
     except Exception as e:
         st.error(f"Error fetching project files: {e}")
         return pd.DataFrame()
 
-
 def upload_file(project_id, uploaded_file):
     if uploaded_file is not None:
-        directory = f"files/project_{project_id}/"
-        os.makedirs(directory, exist_ok=True)
-        filepath = os.path.join(directory, uploaded_file.name)
-        with open(filepath, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        with get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO project_files (project_id, file_name, file_path) VALUES (?, ?, ?)",
-                           (project_id, uploaded_file.name, filepath))
-            conn.commit()
-        st.success("File uploaded successfully!")
+        try:
+            # Upload file ke Supabase Storage
+            file_path = f"project_{project_id}/{uploaded_file.name}"
+            response = supabase.storage.from_("project_files").upload(file_path, uploaded_file.getvalue())
+            if response.status_code == 200:
+                # Simpan metadata file ke tabel project_files
+                response_db = supabase.table("project_files").insert([
+                    {
+                        "project_id": project_id,
+                        "file_name": uploaded_file.name,
+                        "file_path": file_path
+                    }
+                ]).execute()
+                if response_db.status_code == 201:
+                    st.success("File uploaded successfully!")
+                else:
+                    st.error(f"Error saving file metadata: {response_db.data}")
+            else:
+                st.error(f"Error uploading file: {response.data}")
+        except Exception as e:
+            st.error(f"Error uploading file: {e}")
 
-def delete_file(file_id):
+def delete_file(file_id, file_path):
     try:
-        with get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM project_files WHERE id=?", (file_id,))
-            row = cursor.fetchone()
-            if row is not None and os.path.exists(row[3]):  #Index corrected to 3 for file_path
-                os.remove(row[3])
-                cursor.execute("DELETE FROM project_files WHERE id=?", (file_id,))
-                conn.commit()
+        # Hapus file dari Supabase Storage
+        response_storage = supabase.storage.from_("project_files").remove([file_path])
+        if response_storage.status_code == 204:
+            # Hapus metadata file dari tabel project_files
+            response_db = supabase.table("project_files").delete().eq("id", file_id).execute()
+            if response_db.status_code == 200:
                 st.success("File deleted successfully!")
             else:
-                st.error("File does not exist.")
+                st.error(f"Error deleting file metadata: {response_db.data}")
+        else:
+            st.error(f"Error deleting file from storage: {response_storage.data}")
     except Exception as e:
         st.error(f"Error deleting file: {e}")
 
 # --- Streamlit App ---
-init_db()
 st.image("cistech.png", width=450)
 
 st.title("Dashboard Mapping Project TSCM")
@@ -148,7 +149,6 @@ with tabs[0]:
     else:
         st.info("No Projects found in the database.")
 
-
 with tabs[1]:
     st.subheader("Add New Project")
     with st.form("add_project_form"):
@@ -156,7 +156,7 @@ with tabs[1]:
         new_category = st.selectbox("Category", ["Project", "Service"])
         new_pic = st.text_input("PIC")
         new_status = st.selectbox("Status", ["Not Started", "Waiting BA", "Not Report", "In Progress", "On Hold", "Completed"])
-        new_no_po = st.text_input("PO Number") #Added PO Number input
+        new_no_po = st.text_input("PO Number")  # Added PO Number input
         st.write("Select Start and End Dates")
         today = datetime.date.today()
         start_date, end_date = st.date_input(
@@ -191,7 +191,7 @@ with tabs[2]:
             edit_category = st.selectbox("Category", ["Project", "Service"], index=["Project", "Service"].index(selected_row['category']))
             edit_pic = st.text_input("PIC", selected_row["pic"])
             edit_status = st.selectbox("Status", ["Not Started", "Waiting BA", "Not Report", "In Progress", "On Hold", "Completed"], index=["Not Started", "Waiting BA", "Not Report", "In Progress", "On Hold", "Completed"].index(selected_row["status"]))
-            edit_no_po = st.text_input("PO Number", selected_row["no_po"]) #Added PO Number input
+            edit_no_po = st.text_input("PO Number", selected_row["no_po"])  # Added PO Number input
             st.write("Select Start and End Dates")
             start_dt = datetime.datetime.strptime(selected_row['date_start'], '%Y-%m-%d').date()
             end_dt = datetime.datetime.strptime(selected_row['date_end'], '%Y-%m-%d').date()
@@ -205,7 +205,6 @@ with tabs[2]:
             if update_btn:
                 update_project(selected_option, edit_project_name, edit_category, edit_pic, edit_status, start_dt, end_dt, edit_no_po)
 
-
 with tabs[3]:
     st.subheader("Delete Project")
     df = get_all_projects()
@@ -218,8 +217,6 @@ with tabs[3]:
         )
         if st.button("Delete Selected Project"):
             delete_project(delete_selected_option)
-
-
 
 with tabs[4]:
     st.subheader("Manage Files for Each Project")
@@ -253,18 +250,22 @@ with tabs[4]:
             col1.write(row['file_name'])
 
             # Tombol download file
-            col2.download_button(
+            file_url = supabase.storage.from_("project_files").get_public_url(row['file_path'])
+            if st.download_button(
                 label="Download",
-                data=open(row['file_path'], 'rb').read(),
+                data=requests.get(file_url).content,
                 file_name=row['file_name'],
                 mime='application/octet-stream',
                 key=f'download-{row.id}'
-            )
+            ):
+                st.success("File downloaded successfully!")
 
             # Tombol hapus file
-            col3.button(
-                label="clear", 
+            if col3.button(
+                label="Delete", 
                 key=row.id, 
                 on_click=delete_file, 
-                args=(row.id,)
-            )
+                args=(row.id, row['file_path'])
+            ):
+                st.success("File deleted successfully!")
+

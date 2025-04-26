@@ -7,7 +7,7 @@ from supabase import create_client
 import requests
 
 # Konfigurasi Supabase
-url ="https://fyzpsnrwchqeivygyydf.supabase.co"
+url = "https://qliuwywmmknonkyytatr.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsaXV3eXdtbWtub25reXl0YXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTYxMzIsImV4cCI6MjA2MDk3MjEzMn0.g6rdmhODiWZqxEMxB8TO2gDIlZDfykxqem-YKY4Hp1s"
 supabase = create_client(url, key)
 

@@ -57,12 +57,10 @@ def delete_project(project_id):
         response = supabase.table('projects').delete().eq('id', project_id).execute()
         if response.error:
             st.error(f"Error deleting project: {response.error.message}")
-        elif response.status_code == 200:
-            st.success("Project successfully deleted!")
         else:
-            st.error(f"Unexpected error deleting project. Status code: {response.status_code}")
+            st.success("Project deleted successfully!")
     except Exception as e:
-        st.error(f"Error deleting project: {e}")
+        st.error(f"Unexpected error deleting project: {e}")
 
 def get_all_project_files(project_id):
     try:
@@ -74,20 +72,16 @@ def get_all_project_files(project_id):
         return pd.DataFrame()
 
 def upload_file(project_id, uploaded_file):
-    if uploaded_file is not None:
-        file_path = f"project_{project_id}/{uploaded_file.name}"
-        response = supabase.storage.from_("project.files").upload(file_path, uploaded_file.getbuffer()).execute()
-        if response.error:
-            st.error(f"Error uploading file to Supabase: {response.error.message}")
-        elif response.status_code == 200:
-            with get_connection() as conn: #get_connection still needs to be defined
-                cursor = conn.cursor()
-                cursor.execute("INSERT INTO project_files (project_id, file_name, file_path) VALUES (?, ?, ?)",
-                               (project_id, uploaded_file.name, file_path))
-                conn.commit()
-            st.success("File uploaded successfully!")
-        else:
-            st.error(f"Unexpected error uploading file. Status code: {response.status_code}")
+    if uploaded_file is not None and uploaded_file.name != "":
+       file_path = f"project_{project_id}/{uploaded_file.name}"
+       res = supabase.storage.from_("project.files").upload(file_path, uploaded_file.getbuffer())
+       if res.get("error"):
+           st.error(f"Error uploading file to Supabase Storage: {res['error']['message']}")
+       else:
+           # Simpan metadata ke database jika perlu
+           ...
+           st.success("File uploaded successfully!")
+
 
 def delete_file(file_id):
     try:

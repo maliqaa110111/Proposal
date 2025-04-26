@@ -10,8 +10,7 @@ from supabase import create_client
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_ANON_KEY"]
 
-supabase = create_client(url, key)
-
+supabase = create_client(url,key)
 
 def get_all_projects():
     try:
@@ -20,7 +19,7 @@ def get_all_projects():
             df = pd.DataFrame(response.data)
             return df
         else:
-            st.info("No projects found in the database.")  # Lebih baik daripada error
+            st.info("No Projects found in the database.")
             return pd.DataFrame()
     except Exception as e:
         st.error(f"Error fetching projects: {e}")
@@ -33,17 +32,22 @@ def add_project(project_name, category, pic, status, date_start, date_end, no_po
             "category": category,
             "pic": pic,
             "status": status,
-            "date_start": date_start.strftime('%Y-%m-%d'),  # Pastikan format tanggal sesuai dengan kolom di Supabase!
-            "date_end": date_end.strftime('%Y-%m-%d'),    # Pastikan format tanggal sesuai dengan kolom di Supabase!
+            "date_start": date_start.strftime('%Y-%m-%d'),
+            "date_end": date_end.strftime('%Y-%m-%d'),
             "no_po": no_po
         }
         response = supabase.table('projects').insert(data).execute()
-        if response.status_code == 201:  # Periksa status code untuk memastikan keberhasilan insert data!
-            st.success("Project added successfully!")
+        
+        if response.status_code == 201 or (hasattr(response,'status_code') and response.status_code == 201):
+           st.success("Project added successfully!")
+           return True
         else:
-            st.error(f"Error adding project: {response.data}") # Tampilkan error response dari Supabase
+           st.error(f"Failed to add project: {response.data}")
+           return False
+
     except Exception as e:
-        st.error(f"Error adding project: {e}")
+       st.error(f"Error adding project: {e}")
+       return False
 
 def update_project(id, project_name, category, pic, status, date_start, date_end, no_po):
     try:

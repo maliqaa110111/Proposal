@@ -179,14 +179,14 @@ with tabs[4]:
         )
         
         # ... (bagian upload file)
+uploaded_file = st.file_uploader(
+    "Upload New File Here", 
+    type=['pdf', 'docx', 'png', 'jpg', 'jpeg']
+)
 
-                uploaded_file = st.file_uploader(
-            "Upload New File Here", 
-            type=['pdf', 'docx', 'png', 'jpg', 'jpeg']
-        )
-
-        if st.button("Upload New File"):
-            upload_file(selected_project, uploaded_file)
+if st.button("Upload New File"):
+    upload_file(selected_project, uploaded_file)
+        
         files_df = get_all_project_files(selected_project)
         if not files_df.empty:
             st.write("Daftar File:")

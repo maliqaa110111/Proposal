@@ -113,7 +113,7 @@ def delete_file(file_id):
         st.error(f"Error deleting file: {e}")
 
 # --- Streamlit App ---
-init_db()
+
 st.image("cistech.png", width=450)
 
 st.title("Dashboard Mapping Project TSCM")

@@ -1,5 +1,4 @@
 import streamlit as st
-from PIL import Image
 import pandas as pd
 import datetime
 from supabase import create_client, Client
@@ -19,6 +18,7 @@ def get_all_projects():
             st.info("Tidak ada proyek yang ditemukan.")
             return pd.DataFrame()
         df = pd.DataFrame(data)
+        df.insert(0, 'No', range(1, len(df) + 1))  # Tambah kolom nomor urut
         return df
     except Exception as e:
         st.error(f"Kesalahan mengambil data proyek: {str(e)}")
@@ -48,7 +48,10 @@ def delete_project(project_id):
 def get_all_project_files(project_id):
     try:
         response = supabase.storage.from_("project.files").list(f"project_{project_id}")
-        files = [{"file_name": f["name"], "file_path": f"project_{project_id}/{f['name']}"} for f in response]
+        if response.error:
+            st.error(f"Error mengambil file: {response.error.message}")
+            return pd.DataFrame()
+        files = [{"file_name": f["name"], "file_path": f"project_{project_id}/{f['name']}"} for f in response.data]
         return pd.DataFrame(files)
     except Exception as e:
         st.error(f"Error mengambil file: {str(e)}")
@@ -58,15 +61,22 @@ def upload_file(project_id, uploaded_file):
     if uploaded_file is not None:
         try:
             file_path = f"project_{project_id}/{uploaded_file.name}"
-            supabase.storage.from_("project.files").upload(file_path, uploaded_file.getvalue())
-            st.success("File berhasil diupload!")
+            res = supabase.storage.from_("project.files").upload(file_path, uploaded_file.getvalue())
+            if res.error:
+                st.error(f"Gagal upload file: {res.error.message}")
+            else:
+                st.success("File berhasil diupload!")
         except Exception as e:
             st.error(f"Gagal upload file: {str(e)}")
 
 def delete_file(project_id, file_path):
     try:
-        supabase.storage.from_("project.files").remove([file_path]).execute()
-        st.success("File berhasil dihapus!")
+        res = supabase.storage.from_("project.files").remove([file_path])
+        if res.error:
+            st.error(f"Gagal menghapus file: {res.error.message}")
+        else:
+            st.success("File berhasil dihapus!")
+            st.experimental_rerun()
     except Exception as e:
         st.error(f"Gagal menghapus file: {str(e)}")
 
@@ -88,11 +98,13 @@ with tabs[0]:
             'date_start': 'Start Date',
             'date_end': 'End Date',
             'no_po': 'PO Number'
-        }).set_index('id')
+        })
+        # Tampilkan tanpa kolom 'id', pakai 'No' sebagai nomor urut
+        display_df = display_df.drop(columns=['id'])
+        display_df = display_df.set_index('No')
         st.dataframe(display_df, use_container_width=True)
     else:
         st.info("No Projects found in the database.")
-
 
 with tabs[1]:
     st.subheader("Tambah Project Baru")
@@ -182,6 +194,7 @@ with tabs[4]:
         if uploaded_file is not None:
             if st.button("Upload"):
                 upload_file(selected_project, uploaded_file)
+                st.experimental_rerun()
         files_df = get_all_project_files(selected_project)
         if not files_df.empty:
             st.write("Daftar File:")
@@ -197,4 +210,5 @@ with tabs[4]:
                 )
                 if col3.button("🗑️", key=f"delete_{selected_project}_{row['file_name']}_{index}", on_click=delete_file, args=(selected_project, row['file_path'])):
                     st.experimental_rerun()
-
+        else:
+            st.info("Belum ada file di project ini.")

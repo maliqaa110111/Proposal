@@ -86,21 +86,22 @@ with tabs[0]:
             'category': 'Kategori',
             'pic': 'PIC',
             'status': 'Status',
-            'date_start': 'Tanggal Mulai',
+            'date_start': 'Tanggal Mulai', 
             'date_end': 'Tanggal Selesai',
             'no_po': 'Nomor PO'
         })
         
-        # Tambahkan kolom nomor urut (1, 2, 3, ...)
-        display_df.insert(0, 'No', range(1, len(display_df) + 1)  # Kolom pertama
+        # Tambahkan kolom nomor urut (1, 2, 3,...)
+        display_df.insert(0, 'No', range(1, len(display_df) + 1))  # Perbaikan syntax
         
         # Hapus kolom ID asli dari tampilan
         display_df = display_df.drop(columns=['id'])
         
+        # Tampilkan dataframe tanpa index
         st.dataframe(display_df, use_container_width=True)
+        
     else:
-        st.info("Tidak ada proyek yang ditemukan dalam database.") len(display_df) + 1))  # Kolom pertama
-    st.dataframe(display_df)
+        st.info("Tidak ada proyek yang ditemukan dalam database.")
 
 
 with tabs[1]:

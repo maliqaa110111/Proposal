@@ -92,11 +92,14 @@ with tabs[0]:
         })
         
         # Tambahkan kolom nomor urut (1, 2, 3, ...)
-        projects_df = get_all_projects()
-
-if not projects_df.empty:
-    display_df = projects_df.copy()
-    display_df.insert(0, 'No', range(1, len(display_df) + 1))  # Kolom pertama
+        display_df.insert(0, 'No', range(1, len(display_df) + 1)  # Kolom pertama
+        
+        # Hapus kolom ID asli dari tampilan
+        display_df = display_df.drop(columns=['id'])
+        
+        st.dataframe(display_df, use_container_width=True)
+    else:
+        st.info("Tidak ada proyek yang ditemukan dalam database.") len(display_df) + 1))  # Kolom pertama
     st.dataframe(display_df)
 
 

@@ -25,8 +25,8 @@ def login():
                 st.error("Login gagal, cek email dan password.")
         except Exception as e:
             st.error(f"Error login: {e}")
-            def signup():
-                
+
+def signup():
     st.title("Sign Up")
     email = st.text_input("Email untuk registrasi", key="signup_email")
     password = st.text_input("Password", type="password", key="signup_password")

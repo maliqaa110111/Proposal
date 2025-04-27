@@ -25,6 +25,20 @@ def login():
                 st.error("Login gagal, cek email dan password.")
         except Exception as e:
             st.error(f"Error login: {e}")
+            def signup():
+                
+    st.title("Sign Up")
+    email = st.text_input("Email untuk registrasi", key="signup_email")
+    password = st.text_input("Password", type="password", key="signup_password")
+    if st.button("Sign Up"):
+        try:
+            user = supabase.auth.sign_up({"email": email, "password": password})
+            if user.user:
+                st.success("Registrasi berhasil! Silakan login.")
+            else:
+                st.error("Gagal registrasi.")
+        except Exception as e:
+            st.error(f"Error sign up: {e}")
 
 def logout():
     supabase.auth.sign_out()

@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import datetime
 from supabase import create_client
+import requests
 
 # Konfigurasi Supabase
 url = st.secrets["SUPABASE_URL"]
@@ -10,13 +10,35 @@ supabase = create_client(url, anon_key)
 
 # --- AUTENTIKASI ---
 
+def signup():
+    st.title("Sign Up")
+    email = st.text_input("Email", key="signup_email")
+    password = st.text_input("Password", type="password", key="signup_password")
+    password_confirm = st.text_input("Confirm Password", type="password", key="signup_password_confirm")
+
+    if st.button("Register"):
+        if not email or not password or not password_confirm:
+            st.error("Semua field harus diisi!")
+            return
+        if password != password_confirm:
+            st.error("Password dan konfirmasi password tidak sama!")
+            return
+        try:
+            response = supabase.auth.sign_up({"email": email, "password": password})
+            if response.user:
+                st.success("Registrasi berhasil! Silakan cek email untuk verifikasi.")
+            else:
+                st.error("Registrasi gagal. Silakan coba lagi.")
+        except Exception as e:
+            st.error(f"Error saat registrasi: {e}")
+
 def login():
     st.title("Login")
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
+    email = st.text_input("Email", key="login_email")
+    password = st.text_input("Password", type="password", key="login_password")
     if st.button("Login"):
         try:
-            user = supabase.auth.sign_in(email=email, password=password)
+            user = supabase.auth.sign_in_with_password({"email": email, "password": password})
             if user.user:
                 st.session_state['user'] = user.user
                 st.success("Login berhasil!")
@@ -25,20 +47,6 @@ def login():
                 st.error("Login gagal, cek email dan password.")
         except Exception as e:
             st.error(f"Error login: {e}")
-
-def signup():
-    st.title("Sign Up")
-    email = st.text_input("Email untuk registrasi", key="signup_email")
-    password = st.text_input("Password", type="password", key="signup_password")
-    if st.button("Sign Up"):
-        try:
-            user = supabase.auth.sign_up({"email": email, "password": password})
-            if user.user:
-                st.success("Registrasi berhasil! Silakan login.")
-            else:
-                st.error("Gagal registrasi.")
-        except Exception as e:
-            st.error(f"Error sign up: {e}")
 
 def logout():
     supabase.auth.sign_out()
@@ -75,12 +83,10 @@ def edit_project(project_id, name, category, pic):
         st.success("Project berhasil diperbarui!")
 
 def delete_project(project_id):
-    # Hapus file terkait dulu (opsional)
     files_resp = supabase.storage.from_('project_files').list(f"projects/{project_id}/")
     if files_resp.data:
         paths = [f"projects/{project_id}/{f['name']}" for f in files_resp.data]
         supabase.storage.from_('project_files').remove(paths)
-    # Hapus project
     response = supabase.table('projects').delete().eq('id', project_id).execute()
     if response.error:
         st.error(f"Error hapus project: {response.error.message}")
@@ -209,6 +215,10 @@ def edit_project_page(project_id):
 
 if __name__ == "__main__":
     if 'user' not in st.session_state:
-        login()
+        auth_choice = st.sidebar.selectbox("Pilih Aksi", ["Login", "Sign Up"])
+        if auth_choice == "Login":
+            login()
+        else:
+            signup()
     else:
         main_app()
